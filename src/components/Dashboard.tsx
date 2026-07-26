@@ -12,9 +12,19 @@ import { DynamicChart } from "./DynamicChart";
 import { KPICard } from "./KPICard";
 
 const SUGGESTIONS = [
+  "What is the current weather and forecast for Chennai?",
+  "Compare weather in Chennai, Mumbai and Bengaluru",
+  "How much rain is expected in Chennai this week?",
   "Compare weather in Boston, New York and Seattle last month",
-  "What was the windiest day in Kansas City this year?",
-  "How much rain did Los Angeles get last month?",
+];
+
+const SAMPLE_CITIES = [
+  { name: "Chennai", query: "What is the weather in Chennai?" },
+  { name: "Mumbai", query: "What is the weather in Mumbai?" },
+  { name: "Bengaluru", query: "What is the weather in Bengaluru?" },
+  { name: "Delhi", query: "What is the weather in Delhi?" },
+  { name: "London", query: "What is the weather in London?" },
+  { name: "Tokyo", query: "What is the weather in Tokyo?" },
 ];
 
 function formatDateFocus(dateStr: string): string {
@@ -73,6 +83,11 @@ export const Dashboard: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [isLanding, query]);
+
+  // Auto-run weather dashboard for sample city Chennai on mount
+  useEffect(() => {
+    handleSearch("What is the weather in Chennai?");
+  }, []);
 
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const landingTextareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -265,6 +280,23 @@ export const Dashboard: React.FC = () => {
                     </button>
                   </form>
 
+                  {/* Quick Sample Cities */}
+                  <div className="flex flex-wrap items-center justify-center gap-2 mt-4 max-w-[600px] mx-auto">
+                    <span className="text-white/50 text-xs mr-1 font-medium">Sample Cities:</span>
+                    {SAMPLE_CITIES.map((city) => (
+                      <button
+                        key={city.name}
+                        onClick={() => {
+                          setQuery(city.query);
+                          handleSearch(city.query);
+                        }}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-white/10 hover:bg-white/20 text-white/90 border border-white/10 transition-all backdrop-blur-md"
+                      >
+                        {city.name}
+                      </button>
+                    ))}
+                  </div>
+
                   <div className="mt-6 text-center">
                     <a 
                       href="https://open-meteo.com/" 
@@ -366,7 +398,7 @@ export const Dashboard: React.FC = () => {
                 {/* Search bar pinned underneath results */}
                 <div className={`w-full max-w-[600px] mt-8 mb-4 space-y-4 transition-opacity duration-300 ${isLoading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                 {/* Search input */}
-                <form onSubmit={onSubmit} className="relative mb-4">
+                <form onSubmit={onSubmit} className="relative mb-2">
                   <div className="absolute top-3.5 left-0 pl-4 flex items-center pointer-events-none">
                     {isLoading
                       ? <Loader2 className="h-3.5 w-3.5 text-black/50 animate-spin" />
@@ -384,7 +416,7 @@ export const Dashboard: React.FC = () => {
                       WebkitBackdropFilter: "blur(40px)",
                       minHeight: '48px'
                     }}
-                    placeholder="Ask a follow-up question…"
+                    placeholder="Ask a follow-up question or search city…"
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                     onKeyDown={onKeyDown}
@@ -399,6 +431,23 @@ export const Dashboard: React.FC = () => {
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </form>
+
+                {/* Quick Sample Cities */}
+                <div className="flex flex-wrap items-center justify-center gap-1.5 mb-3">
+                  <span className="text-black/50 text-[11px] mr-1 font-medium">Quick Cities:</span>
+                  {SAMPLE_CITIES.map((city) => (
+                    <button
+                      key={city.name}
+                      onClick={() => {
+                        setQuery(city.query);
+                        handleSearch(city.query);
+                      }}
+                      className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-black/10 hover:bg-black/20 text-black/80 transition-all"
+                    >
+                      {city.name}
+                    </button>
+                  ))}
+                </div>
 
                 <div className="text-center pt-1">
                   <a 

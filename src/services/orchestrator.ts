@@ -6,10 +6,22 @@
 import { GoogleGenAI } from "@google/genai";
 import { fetchLiveWeatherData, formatOpenMeteoData, OpenMeteoParams } from "./weatherService";
 
-// Initialize Gemini
-// @ts-ignore
-const apiKey = import.meta.env?.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "";
-const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+// Lazy initialization for Gemini AI client
+function getAIClient(): GoogleGenAI {
+  // @ts-ignore
+  const apiKey = import.meta.env?.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || process.env.API_KEY || "";
+  if (!apiKey) {
+    throw new Error("Gemini API key is required. Please add GEMINI_API_KEY in your environment configuration.");
+  }
+  return new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      headers: {
+        "User-Agent": "aistudio-build",
+      },
+    },
+  });
+}
 
 export interface DashboardWidget {
   id: string;
@@ -129,9 +141,7 @@ Return ONLY valid JSON.
 `;
 
 export async function generateDashboardConfig(query: string): Promise<DashboardResponse> {
-  if (!ai) {
-    throw new Error("No API key found. AI features are unavailable.");
-  }
+  const ai = getAIClient();
 
   try {
     const baseContext = `
@@ -141,7 +151,7 @@ export async function generateDashboardConfig(query: string): Promise<DashboardR
 
     // Part 1: Generate API Parameters
     const paramsResponse = await ai.models.generateContent({
-      model: "gemini-3.1-flash-lite-preview", 
+      model: "gemini-3.6-flash", 
       contents: [
         { role: "user", parts: [{ text: apiSystemPrompt + "\n" + baseContext }] }
       ],
@@ -160,8 +170,18 @@ export async function generateDashboardConfig(query: string): Promise<DashboardR
     let queryResult: any[] = [];
     try {
       const fetchPromises = paramsArray.map(async (params) => {
-        if (params.latitude && params.longitude) {
-          const rawData = await fetchLiveWeatherData(params);
+        let lat = params.latitude;
+        let lon = params.longitude;
+        if ((!lat || !lon) && params.city) {
+          const lowerCity = params.city.toLowerCase();
+          if (lowerCity.includes("chennai")) { lat = 13.0827; lon = 80.2707; }
+        } else if (!lat && !lon) {
+          lat = 13.0827;
+          lon = 80.2707;
+          params.city = params.city || "Chennai";
+        }
+        if (lat && lon) {
+          const rawData = await fetchLiveWeatherData({ ...params, latitude: lat, longitude: lon });
           return formatOpenMeteoData(rawData, params.city);
         }
         return [];
@@ -213,7 +233,7 @@ export async function generateDashboardConfig(query: string): Promise<DashboardR
 
     // Part 2: Generate Layout and Widgets
     const layoutResponse = await ai.models.generateContent({
-      model: "gemini-3.1-flash-lite-preview", 
+      model: "gemini-3.6-flash", 
       contents: [
         { role: "user", parts: [{ text: layoutSystemPrompt + "\n" + baseContext + "\n" + dataContext }] }
       ],

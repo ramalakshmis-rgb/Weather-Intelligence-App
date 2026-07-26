@@ -47,7 +47,7 @@ export function formatKeyName(key: string): string {
     .join(" ");
 }
 
-function formatChartDate(value: string | number, showTime: boolean): string {
+function formatChartDate(value: any, showTime: boolean): string {
   if (typeof value === 'string') {
     // Also support checking for values that are just ISO dates like YYYY-MM-DD
     const isDateString = value.includes('-') && (value.includes(':') || value.match(/^\d{4}-\d{2}-\d{2}$/));
